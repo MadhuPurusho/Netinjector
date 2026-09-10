@@ -8,11 +8,7 @@
     "build": "electron-builder --mac dir",
     "dist": "electron-builder --mac dmg"
   },
-  "dependencies": {
-    "node-arp": "^1.0.6",
-    "node-wifi": "^2.0.16",
-    "ping": "^0.4.4"
-  },
+  "dependencies": {},
   "devDependencies": {
     "electron": "^31.0.0",
     "electron-builder": "^26.15.3"

@@ -4,7 +4,23 @@ const os = require('os');
 const dns = require('dns');
 const net = require('net');
 const { exec } = require('child_process');
-const ping = require('ping');
+
+// Pure TCP host-alive probe (no system ping binary — avoids XProtect)
+function hostAlive(ip, timeout = 400) {
+  return new Promise((resolve) => {
+    const probe = new net.Socket();
+    probe.setTimeout(timeout);
+    // Try port 80 first, then 443, then 22 — any TCP response = host alive
+    probe.on('connect', () => { probe.destroy(); resolve(true); });
+    probe.on('timeout', () => { probe.destroy(); resolve(false); });
+    probe.on('error', (err) => {
+      probe.destroy();
+      // ECONNREFUSED = host exists, port just closed
+      resolve(err.code === 'ECONNREFUSED');
+    });
+    probe.connect(80, ip);
+  });
+}
 
 // OUI dictionary for device manufacturer identification
 const OUI_MAP = {
@@ -350,8 +366,8 @@ function checkPort(ip, port, timeout = 600) {
 
 async function scanHost(ip, ports) {
   try {
-    const res = await ping.promise.probe(ip, { timeout: 1, min_reply: 1 });
-    if (!res.alive) return null;
+    const alive = await hostAlive(ip);
+    if (!alive) return null;
 
     const [hostname, mac, ...portResults] = await Promise.all([
       reverseDns(ip),
